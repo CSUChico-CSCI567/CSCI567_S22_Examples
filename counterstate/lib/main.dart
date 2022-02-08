@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -48,18 +49,51 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+  late Future<int> _counter;
+  // int _counter = 0;
 
-  void _incrementCounter() {
+  // Future<void> _incrementCounter() async {
+  //   final SharedPreferences prefs = await _prefs;
+  //   final int counter = (prefs.getInt('counter') ?? 0) + 1;
+
+
+  //     prefs.setInt('counter', counter).then((bool success) {
+  //       _counter =  counter;
+  //     });
+  //     setState(() {
+
+  //     });
+  // }
+  Future<void> _incrementCounter() async {
+    final SharedPreferences prefs = await _prefs;
+    final int counter = (prefs.getInt('counter') ?? 0) + 1;
+
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _counter = prefs.setInt('counter', counter).then((bool success) {
+        return counter;
+      });
     });
   }
+
+  // Future<void> _getCount() async {
+  //     _prefs.then((SharedPreferences prefs) {
+  //       setState(() {
+  //          _counter = prefs.getInt('counter') ?? 0;
+  //       });
+  //     });
+  // }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    // _getCount();
+    _counter = _prefs.then((SharedPreferences prefs) {
+      return prefs.getInt('counter') ?? 0;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -95,14 +129,23 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'You have pushed the button this many times:',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
+            FutureBuilder<int>(
+              future: _counter,
+              builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                switch (snapshot.connectionState) {
+                  case ConnectionState.waiting:
+                    return const CircularProgressIndicator();
+                  default:
+                    if (snapshot.hasError) {
+                      return Text('Error: ${snapshot.error}');
+                    } else {
+                      return Text(
+                        'Button tapped ${snapshot.data} time${snapshot.data == 1 ? '' : 's'}.\n\n'
+                        'This should persist across restarts.',
+                      );
+                    }
+                }
+              }),
           ],
         ),
       ),
