@@ -26,16 +26,21 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.red,
       ),
-      home: MyHomePage(
+      home: const MyHomePage(
         title: 'Flutter Demo Home Page',
-        storage: CounterStorage(),
+        storage: CounterStorage(filename: 'counter.txt'),
+        storage2: CounterStorage(filename: 'counter2.txt'),
       ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title, required this.storage})
+  const MyHomePage(
+      {Key? key,
+      required this.title,
+      required this.storage,
+      required this.storage2})
       : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
@@ -47,6 +52,8 @@ class MyHomePage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
   final CounterStorage storage;
+  final CounterStorage storage2;
+
   final String title;
 
   @override
@@ -55,11 +62,16 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late Future<int> _counter;
+  late Future<int> _counter2;
 
   Future<void> _incrementCounter() async {
     widget.storage.writeCounter((await _counter) + 1);
     setState(() {
       _counter = widget.storage.readCounter();
+    });
+    widget.storage2.writeCounter((await _counter2) + 1);
+    setState(() {
+      _counter2 = widget.storage2.readCounter();
     });
   }
 
@@ -68,6 +80,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // TODO: implement initState
     super.initState();
     _counter = widget.storage.readCounter();
+    _counter2 = widget.storage2.readCounter();
   }
 
   @override
@@ -106,6 +119,23 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             FutureBuilder<int>(
                 future: _counter,
+                builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                      return const CircularProgressIndicator();
+                    default:
+                      if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else {
+                        return Text(
+                          'Button tapped ${snapshot.data} time${snapshot.data == 1 ? '' : 's'}.\n\n'
+                          'This should persist across restarts.',
+                        );
+                      }
+                  }
+                }),
+            FutureBuilder<int>(
+                future: _counter2,
                 builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
                   switch (snapshot.connectionState) {
                     case ConnectionState.waiting:

@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 
 class CounterStorage {
+  const CounterStorage({required this.filename});
+
+  final String filename;
+
   Future<String> get _localPath async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
@@ -11,7 +15,7 @@ class CounterStorage {
 
   Future<File> get _localFile async {
     final path = await _localPath;
-    return File('$path/counter.txt');
+    return File('$path/$filename');
   }
 
   Future<bool> writeCounter(int counter) async {
