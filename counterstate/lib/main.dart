@@ -1,5 +1,6 @@
+import 'dart:async';
+import 'package:counterstate/storage.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,13 +26,17 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.red,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(
+        title: 'Flutter Demo Home Page',
+        storage: CounterStorage(),
+      ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
+  const MyHomePage({Key? key, required this.title, required this.storage})
+      : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
   // that it has a State object (defined below) that contains fields that affect
@@ -41,7 +46,7 @@ class MyHomePage extends StatefulWidget {
   // case the title) provided by the parent (in this case the App widget) and
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
-
+  final CounterStorage storage;
   final String title;
 
   @override
@@ -49,51 +54,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
   late Future<int> _counter;
-  // int _counter = 0;
 
-  // Future<void> _incrementCounter() async {
-  //   final SharedPreferences prefs = await _prefs;
-  //   final int counter = (prefs.getInt('counter') ?? 0) + 1;
-
-
-  //     prefs.setInt('counter', counter).then((bool success) {
-  //       _counter =  counter;
-  //     });
-  //     setState(() {
-
-  //     });
-  // }
   Future<void> _incrementCounter() async {
-    final SharedPreferences prefs = await _prefs;
-    final int counter = (prefs.getInt('counter') ?? 0) + 1;
-
+    widget.storage.writeCounter((await _counter) + 1);
     setState(() {
-      _counter = prefs.setInt('counter', counter).then((bool success) {
-        return counter;
-      });
+      _counter = widget.storage.readCounter();
     });
   }
-
-  // Future<void> _getCount() async {
-  //     _prefs.then((SharedPreferences prefs) {
-  //       setState(() {
-  //          _counter = prefs.getInt('counter') ?? 0;
-  //       });
-  //     });
-  // }
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
-    // _getCount();
-    _counter = _prefs.then((SharedPreferences prefs) {
-      return prefs.getInt('counter') ?? 0;
-    });
+    _counter = widget.storage.readCounter();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -130,22 +105,22 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             FutureBuilder<int>(
-              future: _counter,
-              builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-                switch (snapshot.connectionState) {
-                  case ConnectionState.waiting:
-                    return const CircularProgressIndicator();
-                  default:
-                    if (snapshot.hasError) {
-                      return Text('Error: ${snapshot.error}');
-                    } else {
-                      return Text(
-                        'Button tapped ${snapshot.data} time${snapshot.data == 1 ? '' : 's'}.\n\n'
-                        'This should persist across restarts.',
-                      );
-                    }
-                }
-              }),
+                future: _counter,
+                builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
+                  switch (snapshot.connectionState) {
+                    case ConnectionState.waiting:
+                      return const CircularProgressIndicator();
+                    default:
+                      if (snapshot.hasError) {
+                        return Text('Error: ${snapshot.error}');
+                      } else {
+                        return Text(
+                          'Button tapped ${snapshot.data} time${snapshot.data == 1 ? '' : 's'}.\n\n'
+                          'This should persist across restarts.',
+                        );
+                      }
+                  }
+                }),
           ],
         ),
       ),
