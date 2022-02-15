@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:counterstate/storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -26,21 +27,16 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.red,
       ),
-      home: const MyHomePage(
+      home: MyHomePage(
         title: 'Flutter Demo Home Page',
-        storage: CounterStorage(filename: 'counter.txt'),
-        storage2: CounterStorage(filename: 'counter2.txt'),
+        storage: CounterStorage(),
       ),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage(
-      {Key? key,
-      required this.title,
-      required this.storage,
-      required this.storage2})
+  const MyHomePage({Key? key, required this.title, required this.storage})
       : super(key: key);
 
   // This widget is the home page of your application. It is stateful, meaning
@@ -52,7 +48,6 @@ class MyHomePage extends StatefulWidget {
   // used by the build method of the State. Fields in a Widget subclass are
   // always marked "final".
   final CounterStorage storage;
-  final CounterStorage storage2;
 
   final String title;
 
@@ -61,26 +56,62 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  late Future<int> _counter;
-  late Future<int> _counter2;
+  int _counter = -1;
+  int _counter2 = -1;
 
-  Future<void> _incrementCounter() async {
-    widget.storage.writeCounter((await _counter) + 1);
+  void getCount() async {
+    int counter = await widget.storage.readCounter(1);
+    int counter2 = await widget.storage.readCounter(2);
     setState(() {
-      _counter = widget.storage.readCounter();
-    });
-    widget.storage2.writeCounter((await _counter2) + 1);
-    setState(() {
-      _counter2 = widget.storage2.readCounter();
+      _counter = counter;
+      _counter2 = counter2;
     });
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
-    _counter = widget.storage.readCounter();
-    _counter2 = widget.storage2.readCounter();
+    getCount();
+  }
+
+  _incrementCounter() async {
+    setState(() {
+      _counter++;
+    });
+    if (kDebugMode) {
+      print("$_counter");
+    }
+    widget.storage.writeCounter(_counter, 1);
+  }
+
+  _incrementCounter2() async {
+    setState(() {
+      _counter2++;
+    });
+    if (kDebugMode) {
+      print("$_counter2");
+    }
+    widget.storage.writeCounter(_counter2, 2);
+  }
+
+  _decrementCounter2() async {
+    setState(() {
+      _counter2--;
+    });
+    if (kDebugMode) {
+      print("$_counter2");
+    }
+    widget.storage.writeCounter(_counter2, 2);
+  }
+
+  _decrementCounter() async {
+    setState(() {
+      _counter--;
+    });
+    if (kDebugMode) {
+      print("$_counter");
+    }
+    widget.storage.writeCounter(_counter, 1);
   }
 
   @override
@@ -101,67 +132,65 @@ class _MyHomePageState extends State<MyHomePage> {
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            FutureBuilder<int>(
-                future: _counter,
-                builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-                  switch (snapshot.connectionState) {
-                    case ConnectionState.waiting:
-                      return const CircularProgressIndicator();
-                    default:
-                      if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else {
-                        return Text(
-                          'Button tapped ${snapshot.data} time${snapshot.data == 1 ? '' : 's'}.\n\n'
-                          'This should persist across restarts.',
-                        );
-                      }
-                  }
-                }),
-            FutureBuilder<int>(
-                future: _counter2,
-                builder: (BuildContext context, AsyncSnapshot<int> snapshot) {
-                  switch (snapshot.connectionState) {
-                    case ConnectionState.waiting:
-                      return const CircularProgressIndicator();
-                    default:
-                      if (snapshot.hasError) {
-                        return Text('Error: ${snapshot.error}');
-                      } else {
-                        return Text(
-                          'Button tapped ${snapshot.data} time${snapshot.data == 1 ? '' : 's'}.\n\n'
-                          'This should persist across restarts.',
-                        );
-                      }
-                  }
-                }),
+            Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _counter <= 0 ? null : _decrementCounter,
+                      icon: Icon(Icons.exposure_neg_1,
+                          color: _counter <= 0 ? Colors.grey : Colors.red),
+                    ),
+                    _counter == -1
+                        ? CircularProgressIndicator()
+                        : Column(
+                            children: [
+                              Text('Like Count:'),
+                              Text('$_counter'),
+                            ],
+                          ),
+                    IconButton(
+                      onPressed: _counter >= 10 ? null : _incrementCounter,
+                      icon: Icon(Icons.plus_one,
+                          color: _counter < 10 ? Colors.red : Colors.grey),
+                    )
+                  ],
+                )),
+            Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      onPressed: _counter2 <= 0 ? null : _decrementCounter2,
+                      icon: Icon(Icons.nat,
+                          color: _counter2 <= 0 ? Colors.grey : Colors.red),
+                    ),
+                    _counter2 == -1
+                        ? CircularProgressIndicator()
+                        : Column(
+                            children: [
+                              Text('Like Count:'),
+                              Text('$_counter2'),
+                            ],
+                          ),
+                    IconButton(
+                      onPressed: _counter2 >= 10 ? null : _incrementCounter2,
+                      icon: Icon(Icons.add,
+                          color: _counter2 < 10 ? Colors.red : Colors.grey),
+                    )
+                  ],
+                ))
           ],
         ),
       ),
-      // floatingActionButton: Text(
-      //         'Push Me',
-      //         style: Theme.of(context).textTheme.headline4,
-      //       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: _counter >= 10 ? null : _incrementCounter,
         tooltip: 'Increment',
-        child: const Icon(Icons.add_a_photo_outlined),
+        child: const Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
