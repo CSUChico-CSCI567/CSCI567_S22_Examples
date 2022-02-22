@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert' as convert;
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   runApp(const MyApp());
@@ -52,7 +53,6 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
-  List<dynamic>? recipes;
 
   void _incrementCounter() {
     setState(() {
@@ -65,22 +65,24 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  void getRecipes() async {
+  Future getRecipes() async {
     var url = Uri.https('rest.bryancdixon.com', '/food/');
     var response = await http.get(url);
     if (response.statusCode == 200) {
       var jsonResponse =
           convert.jsonDecode(response.body) as Map<String, dynamic>;
-      recipes = jsonResponse['recipes'];
-      setState(() {});
+      var recipes = jsonResponse['recipes'];
+      // setState(() {});
       if (kDebugMode) {
         print(recipes!.length);
         print(recipes.runtimeType);
       }
+      return recipes;
     } else {
       if (kDebugMode) {
         print('Request failed with status: ${response.statusCode}.');
       }
+      throw response.statusCode;
     }
   }
 
@@ -88,7 +90,11 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     // TODO: implement initState
     super.initState();
-    getRecipes();
+    // getRecipes();
+  }
+
+  void _launchURL(String _url) async {
+    if (!await launch(_url)) throw 'Could not launch $_url';
   }
 
   @override
@@ -105,22 +111,59 @@ class _MyHomePageState extends State<MyHomePage> {
         // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: recipes == null
-          ? CircularProgressIndicator()
-          : ListView.builder(
-              itemCount: recipes!.length,
-              itemBuilder: (context, index) {
-                return Card(
-                    child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: <Widget>[
-                      ListTile(
-                        title: Text(recipes![index]['title']),
-                      ),
-                      Image.network(recipes![index]['photo_url']),
-                    ]));
-              },
-            ), // This trailing comma makes auto-formatting nicer for build methods.
+      body: FutureBuilder<dynamic>(
+        future: getRecipes(),
+        builder: (BuildContext context, AsyncSnapshot snapshot) {
+          switch (snapshot.connectionState) {
+            case ConnectionState.waiting:
+              return const CircularProgressIndicator();
+            default:
+              if (snapshot.hasError) {
+                return Text('Error: ${snapshot.error}');
+              } else {
+                return ListView.builder(
+                  itemCount: snapshot.data.length,
+                  itemBuilder: (context, index) {
+                    return ElevatedButton(
+                        onPressed: () {
+                          _launchURL(snapshot.data[index]['url']);
+                        },
+                        child: Card(
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                              ListTile(
+                                title: Text(snapshot.data[index]['title']),
+                              ),
+                              Image.network(snapshot.data[index]['photo_url']),
+                            ])));
+                  },
+                );
+              }
+          }
+        },
+      ),
     );
+
+    // recipes == null
+    //     ? CircularProgressIndicator()
+    //     : ListView.builder(
+    //         itemCount: recipes!.length,
+    //         itemBuilder: (context, index) {
+    //           return ElevatedButton(
+    //               onPressed: () {
+    //                 _launchURL(recipes![index]['url']);
+    //               },
+    //               child: Card(
+    //                   child: Column(
+    //                       mainAxisSize: MainAxisSize.min,
+    //                       children: <Widget>[
+    //                     ListTile(
+    //                       title: Text(recipes![index]['title']),
+    //                     ),
+    //                     Image.network(recipes![index]['photo_url']),
+    //                   ])));
+    //         },
+    //       ), // This trailing comma makes auto-formatting nicer for build methods.
   }
 }
