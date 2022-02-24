@@ -1,90 +1,64 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
-
-const String tableCount = 'mycount';
-const String columnId = '_id';
-const String columnCount = 'count';
-
-class CountObject {
-  late int id;
-  late int count;
-
-  CountObject() {
-    // TODO: implement
-    // throw UnimplementedError();
-  }
-
-  Map<String, dynamic> toMap() {
-    var map = <String, dynamic>{
-      columnCount: count,
-      columnId: id,
-    };
-    return map;
-  }
-
-  CountObject.fromMap(Map<dynamic, dynamic> map) {
-    id = map[columnId];
-    count = map[columnCount];
-  }
-}
+import 'package:cloud_firestore/cloud_firestore.dart';
+//https://github.com/FirebaseExtended/flutterfire/blob/master/packages/firebase_core/firebase_core/example/lib/firebase_config.dart
+import 'package:counterstate/firebase_config.dart';
 
 class CounterStorage {
-  late Database db;
+  bool _initialized = false;
 
-  Future open(String path) async {
-    db = await openDatabase(path, version: 1,
-        onCreate: (Database db, int version) async {
-      await db.execute('''
-            create table $tableCount (
-              $columnId integer primary key autoincrement,
-              $columnCount integer not null)
-            ''');
-    });
+  Future<void> initializeDefault() async {
+    await Firebase.initializeApp(
+        options: DefaultFirebaseConfig.platformOptions);
+    _initialized = true;
   }
 
-  Future<CountObject> getCount(int id) async {
-    List<Map> maps = await db.query(tableCount,
-        columns: [columnId, columnCount],
-        where: '$columnId = ?',
-        whereArgs: [id]);
-    if (maps.isNotEmpty) {
-      return CountObject.fromMap(maps.first);
-    }
-    CountObject co = CountObject();
-    co.count = 0;
-    co.id = id;
-    co = await insert(co);
-    return co;
+  CounterStorage() {
+    initializeDefault();
   }
-
-  Future<CountObject> insert(CountObject countInstance) async {
-    countInstance.id = await db.insert(tableCount, countInstance.toMap());
-    return countInstance;
-  }
-
-  Future<int> update(CountObject countInstance) async {
-    return await db.update(tableCount, countInstance.toMap(),
-        where: '$columnId = ?', whereArgs: [countInstance.id]);
-  }
-
-  Future close() async => db.close();
 
   Future<bool> writeCounter(int counter, int id) async {
-    await open("mydata.db");
-    CountObject co = CountObject();
-    co.count = counter;
-    co.id = id;
-    await update(co);
-    await close();
+    if (!_initialized) {
+      await initializeDefault();
+    }
+    // Access Firestore using the default Firebase app:
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    firestore
+        .collection('example')
+        .doc('csci567')
+        .set({
+          'count': counter,
+        })
+        .then((value) => print("Count Added"))
+        .catchError((error) => print("Failed to update count: $error"));
+
+    // await open("mydata.db");
+    // CountObject co = CountObject();
+    // co.count = counter;
+    // co.id = id;
+    // await update(co);
+    // await close();
     return true;
   }
 
   Future<int> readCounter(int id) async {
-    await open("mydata.db");
-    CountObject co = await getCount(id);
-    await close();
-    return co.count;
+    if (!_initialized) {
+      await initializeDefault();
+    }
+    // Access Firestore using the default Firebase app:
+    FirebaseFirestore firestore = FirebaseFirestore.instance;
+
+    DocumentSnapshot value =
+        await firestore.collection('example').doc('csci567').get();
+    Map<String, dynamic>? data = (value.data()) as Map<String, dynamic>?;
+    // print(data['count']);
+    return data!['count'];
+    // await open("mydata.db");
+    // CountObject co = await getCount(id);
+    // await close();
+    return 0;
   }
 }

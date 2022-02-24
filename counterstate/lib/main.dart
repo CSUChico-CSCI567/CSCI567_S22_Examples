@@ -57,14 +57,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = -1;
-  int _counter2 = -1;
 
   void getCount() async {
     int counter = await widget.storage.readCounter(1);
-    int counter2 = await widget.storage.readCounter(2);
     setState(() {
       _counter = counter;
-      _counter2 = counter2;
     });
   }
 
@@ -82,26 +79,6 @@ class _MyHomePageState extends State<MyHomePage> {
       print("$_counter");
     }
     widget.storage.writeCounter(_counter, 1);
-  }
-
-  _incrementCounter2() async {
-    setState(() {
-      _counter2++;
-    });
-    if (kDebugMode) {
-      print("$_counter2");
-    }
-    widget.storage.writeCounter(_counter2, 2);
-  }
-
-  _decrementCounter2() async {
-    setState(() {
-      _counter2--;
-    });
-    if (kDebugMode) {
-      print("$_counter2");
-    }
-    widget.storage.writeCounter(_counter2, 2);
   }
 
   _decrementCounter() async {
@@ -141,7 +118,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   children: [
                     IconButton(
                       onPressed: _counter <= 0 ? null : _decrementCounter,
-                      icon: Icon(Icons.exposure_neg_1,
+                      icon: Icon(Icons.remove,
                           color: _counter <= 0 ? Colors.grey : Colors.red),
                     ),
                     _counter == -1
@@ -159,31 +136,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     )
                   ],
                 )),
-            Padding(
-                padding: const EdgeInsets.all(40.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      onPressed: _counter2 <= 0 ? null : _decrementCounter2,
-                      icon: Icon(Icons.nat,
-                          color: _counter2 <= 0 ? Colors.grey : Colors.red),
-                    ),
-                    _counter2 == -1
-                        ? CircularProgressIndicator()
-                        : Column(
-                            children: [
-                              Text('Like Count:'),
-                              Text('$_counter2'),
-                            ],
-                          ),
-                    IconButton(
-                      onPressed: _counter2 >= 10 ? null : _incrementCounter2,
-                      icon: Icon(Icons.add,
-                          color: _counter2 < 10 ? Colors.red : Colors.grey),
-                    )
-                  ],
-                ))
           ],
         ),
       ),
