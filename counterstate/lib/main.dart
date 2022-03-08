@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:counterstate/storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(const MyApp());
@@ -57,6 +59,26 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = -1;
+  final ImagePicker _picker = ImagePicker();
+  File? _image;
+
+  Future getImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
+
+    setState(() {
+      if (pickedFile != null) {
+        _image = File(pickedFile.path);
+      } else {
+        if (kDebugMode) {
+          print('No image selected.');
+        }
+      }
+    });
+  }
+
+  void takePhoto() {
+    getImage(ImageSource.camera);
+  }
 
   void getCount() async {
     int counter = await widget.storage.readCounter(1);
@@ -111,6 +133,29 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            _image != null
+                ? new Image.file(
+                    _image!,
+                    height: 250,
+                  )
+                : CircularProgressIndicator(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  onPressed: () {
+                    getImage(ImageSource.gallery);
+                  },
+                  icon: Icon(Icons.photo_album),
+                ),
+                IconButton(
+                  onPressed: () {
+                    getImage(ImageSource.camera);
+                  },
+                  icon: Icon(Icons.camera),
+                )
+              ],
+            ),
             Padding(
                 padding: const EdgeInsets.all(40.0),
                 child: Row(
@@ -140,9 +185,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _counter >= 10 ? null : _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
+        onPressed: _decrementCounter,
+        tooltip: 'Decrement',
+        child: const Icon(Icons.remove),
       ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }

@@ -43,5 +43,11 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Steal your photos</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Spy on you</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Listen on you</string>
 </dict>
 </plist>
